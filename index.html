@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Show-To | Share & Report Easily</title>
+<title>Show-To | Pro Version</title>
 
 <style>
 body {
@@ -17,7 +17,7 @@ header {
   color: white;
   text-align: center;
   padding: 18px;
-  font-size: 24px;
+  font-size: 22px;
 }
 
 .container {
@@ -59,14 +59,34 @@ button:hover {
 .post {
   background: #fff;
   padding: 15px;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
   border-radius: 8px;
   box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  position: relative;
 }
 
-.post strong {
-  display: block;
-  margin-bottom: 5px;
+.delete-btn {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  background: red;
+  color: white;
+  border: none;
+  padding: 5px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.time {
+  font-size: 12px;
+  color: gray;
+  margin-top: 5px;
+}
+
+.empty {
+  text-align: center;
+  color: gray;
 }
 
 footer {
@@ -80,13 +100,12 @@ footer {
 
 <body>
 
-<header>🚀 Show-To</header>
+<header>🚀 Show-To Pro</header>
 
 <div class="container">
 
   <div class="card">
     <h2>Share Something</h2>
-
     <input type="text" id="name" placeholder="Your Name">
     <textarea id="message" placeholder="Write something..."></textarea>
     <button onclick="saveData()">Submit</button>
@@ -103,7 +122,7 @@ footer {
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, query, orderBy } 
+import { getFirestore, collection, addDoc, getDocs, query, orderBy, deleteDoc, doc } 
 from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -128,8 +147,8 @@ window.saveData = async function() {
   }
 
   await addDoc(collection(db, "posts"), {
-    name: name,
-    message: message,
+    name,
+    message,
     timestamp: new Date()
   });
 
@@ -139,19 +158,33 @@ window.saveData = async function() {
   loadPosts();
 };
 
+async function deletePost(id) {
+  await deleteDoc(doc(db, "posts", id));
+  loadPosts();
+}
+
 async function loadPosts() {
   const postsDiv = document.getElementById("posts");
   postsDiv.innerHTML = "";
 
   const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
-  const querySnapshot = await getDocs(q);
+  const snapshot = await getDocs(q);
 
-  querySnapshot.forEach((doc) => {
-    const data = doc.data();
+  if(snapshot.empty) {
+    postsDiv.innerHTML = "<p class='empty'>No posts yet.</p>";
+    return;
+  }
+
+  snapshot.forEach((docSnap) => {
+    const data = docSnap.data();
+    const time = data.timestamp?.toDate().toLocaleString();
+
     postsDiv.innerHTML += `
       <div class="post">
+        <button class="delete-btn" onclick="deletePost('${docSnap.id}')">Delete</button>
         <strong>${data.name}</strong>
         <p>${data.message}</p>
+        <div class="time">${time}</div>
       </div>
     `;
   });
