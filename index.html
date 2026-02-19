@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Show-To | Share & Report Easily</title>
+<meta name="description" content="Show-To is a simple platform where users can share ideas, reports, and useful information quickly and easily.">
+
+<style>
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f4f6f9;
+}
+
+header {
+  background: #111;
+  color: white;
+  text-align: center;
+  padding: 18px;
+  font-size: 24px;
+  letter-spacing: 1px;
+}
+
+.container {
+  max-width: 500px;
+  margin: auto;
+  padding: 20px;
+}
+
+.card {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+h2 {
+  text-align: center;
+}
+
+input, textarea {
+  width: 100%;
+  padding: 12px;
+  margin: 10px 0;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+}
+
+button {
+  width: 100%;
+  padding: 12px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #0056b3;
+}
+
+.success {
+  margin-top: 12px;
+  color: green;
+  text-align: center;
+  font-weight: bold;
+}
+
+footer {
+  text-align: center;
+  padding: 15px;
+  font-size: 13px;
+  color: #777;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  🚀 Show-To
+</header>
+
+<div class="container">
+  <div class="card">
+    <h2>Share Something</h2>
+
+    <form onsubmit="submitForm(event)">
+      <input type="text" placeholder="Your Name" required>
+      <textarea placeholder="Write something you want to share..." required></textarea>
+      <button type="submit">Submit</button>
+    </form>
+
+    <div class="success" id="msg"></div>
+  </div>
+</div>
+
+<footer>
+  © 2026 Show-To | Simple Sharing Platform
+</footer>
+
+<script>
+function submitForm(event) {
+  event.preventDefault();
+  document.getElementById("msg").innerText = "✅ Successfully Submitted!";
+}
+</script>
+
+</body>
+</html>
