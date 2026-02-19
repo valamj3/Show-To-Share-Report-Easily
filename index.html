@@ -3,56 +3,57 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Show-To Login</title>
+<title>Show-To Social</title>
 
 <style>
-body{
-  font-family: Arial;
-  background:#f0f2f5;
-  margin:0;
-}
-.container{
-  max-width:400px;
-  margin:80px auto;
-  background:white;
-  padding:20px;
-  border-radius:10px;
-  box-shadow:0 4px 10px rgba(0,0,0,0.1);
-}
-input{
-  width:100%;
-  padding:10px;
-  margin:8px 0;
-}
-button{
-  width:100%;
-  padding:10px;
-  background:#1877f2;
-  color:white;
-  border:none;
-  border-radius:5px;
-  margin-top:5px;
-}
+body{margin:0;font-family:Arial;background:#f0f2f5;}
+header{background:#1877f2;color:white;padding:15px;text-align:center;font-size:22px;}
+.container{max-width:500px;margin:auto;padding:15px;}
+.card{background:white;padding:15px;margin-top:15px;border-radius:10px;box-shadow:0 2px 6px rgba(0,0,0,0.1);}
+input,textarea{width:100%;padding:10px;margin:5px 0;border-radius:6px;border:1px solid #ccc;}
+button{padding:8px 12px;background:#1877f2;color:white;border:none;border-radius:6px;margin-top:5px;}
+button.red{background:red;}
+.post img{width:100%;border-radius:8px;margin-top:8px;}
+.comment{background:#f1f1f1;padding:5px;border-radius:5px;margin-top:5px;font-size:14px;}
 </style>
 </head>
-
 <body>
 
+<header>🚀 Show-To Social</header>
+
 <div class="container">
-<h2>🚀 Show-To Login</h2>
 
-<input type="email" id="email" placeholder="Enter Email">
-<input type="password" id="password" placeholder="Enter Password">
-
-<button onclick="signUp()">Sign Up</button>
+<div id="authBox" class="card">
+<h3>Login</h3>
+<input id="email" placeholder="Email">
+<input id="password" type="password" placeholder="Password">
 <button onclick="login()">Login</button>
-
-<p id="msg"></p>
+<button onclick="signUp()">Sign Up</button>
 </div>
 
-<!-- Firebase CDN -->
+<div id="app" style="display:none">
+
+<div class="card">
+<p id="welcome"></p>
+<button class="red" onclick="logout()">Logout</button>
+</div>
+
+<div class="card">
+<h3>Create Post</h3>
+<textarea id="postText" placeholder="Write something..."></textarea>
+<input type="file" id="imageInput">
+<button onclick="createPost()">Post</button>
+</div>
+
+<div id="posts"></div>
+
+</div>
+</div>
+
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 <script>
 
@@ -66,36 +67,105 @@ const firebaseConfig = {
 };
 
 firebase.initializeApp(firebaseConfig);
-
 const auth = firebase.auth();
+const db = firebase.firestore();
 
 function signUp(){
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
+auth.createUserWithEmailAndPassword(email.value,password.value);
+}
+function login(){
+auth.signInWithEmailAndPassword(email.value,password.value);
+}
+function logout(){auth.signOut();}
 
-  auth.createUserWithEmailAndPassword(email, password)
-    .then(() => {
-      document.getElementById("msg").innerText = "Signup Success ✅";
-    })
-    .catch(error => {
-      document.getElementById("msg").innerText = error.message;
-    });
+auth.onAuthStateChanged(user=>{
+if(user){
+authBox.style.display="none";
+app.style.display="block";
+welcome.innerText="Welcome "+user.email;
+loadPosts();
+}else{
+authBox.style.display="block";
+app.style.display="none";
+}
+});
+
+async function createPost(){
+let imageUrl="";
+let file=imageInput.files[0];
+
+if(file){
+let formData=new FormData();
+formData.append("file",file);
+formData.append("upload_preset","c901a1efe41ceef9695fdd474ee6bc");
+
+let res=await fetch("https://api.cloudinary.com/v1_1/mukeshdengada/image/upload",{
+method:"POST",
+body:formData
+});
+let data=await res.json();
+imageUrl=data.secure_url;
 }
 
-function login(){
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
+db.collection("posts").add({
+text:postText.value,
+image:imageUrl,
+user:auth.currentUser.email,
+created:Date.now()
+});
+postText.value="";
+imageInput.value="";
+}
 
-  auth.signInWithEmailAndPassword(email, password)
-    .then(() => {
-      document.getElementById("msg").innerText = "Login Success ✅";
-    })
-    .catch(error => {
-      document.getElementById("msg").innerText = error.message;
-    });
+function loadPosts(){
+db.collection("posts").orderBy("created","desc")
+.onSnapshot(snapshot=>{
+posts.innerHTML="";
+snapshot.forEach(doc=>{
+let p=doc.data();
+posts.innerHTML+=`
+<div class="card post">
+<b>${p.user}</b>
+<p>${p.text}</p>
+${p.image?`<img src="${p.image}">`:""}
+
+<input placeholder="Write comment..." id="c${doc.id}">
+<button onclick="addComment('${doc.id}')">Comment</button>
+<div id="comments${doc.id}"></div>
+</div>
+`;
+loadComments(doc.id);
+});
+});
+}
+
+function addComment(postId){
+let text=document.getElementById("c"+postId).value;
+if(text=="") return;
+db.collection("posts").doc(postId)
+.collection("comments")
+.add({
+text:text,
+user:auth.currentUser.email,
+created:Date.now()
+});
+document.getElementById("c"+postId).value="";
+}
+
+function loadComments(postId){
+db.collection("posts").doc(postId)
+.collection("comments").orderBy("created","asc")
+.onSnapshot(snapshot=>{
+let div=document.getElementById("comments"+postId);
+if(!div) return;
+div.innerHTML="";
+snapshot.forEach(doc=>{
+let c=doc.data();
+div.innerHTML+=`<div class="comment"><b>${c.user}</b>: ${c.text}</div>`;
+});
+});
 }
 
 </script>
-
 </body>
 </html>
