@@ -2,91 +2,232 @@
 <html>
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Show-To Social</title>
 
 <style>
 body{
-  font-family:Arial;
-  background:#eef2f6;
-  margin:0;
+margin:0;
+font-family:Arial;
+background:#eef2f7;
 }
+
 header{
-  background:#1877f2;
-  color:white;
-  padding:15px;
-  text-align:center;
-  font-size:20px;
+background:#1877f2;
+color:white;
+padding:15px;
+text-align:center;
+font-size:20px;
+font-weight:bold;
 }
+
 .container{
-  max-width:500px;
-  margin:20px auto;
+max-width:500px;
+margin:auto;
+padding:15px;
 }
+
 .card{
-  background:white;
-  padding:15px;
-  border-radius:10px;
-  margin-bottom:15px;
-  box-shadow:0 4px 10px rgba(0,0,0,0.1);
+background:white;
+padding:15px;
+border-radius:10px;
+box-shadow:0 4px 10px rgba(0,0,0,0.1);
+margin-bottom:15px;
 }
-input, textarea{
-  width:100%;
-  padding:10px;
-  margin:5px 0;
+
+input,textarea{
+width:100%;
+padding:10px;
+margin:5px 0;
+border-radius:6px;
+border:1px solid #ccc;
 }
+
 button{
-  padding:10px;
-  background:#1877f2;
-  color:white;
-  border:none;
-  border-radius:5px;
-  cursor:pointer;
+background:#1877f2;
+color:white;
+border:none;
+padding:8px 12px;
+border-radius:6px;
+cursor:pointer;
 }
-img{
-  width:100px;
-  border-radius:50%;
-  margin-top:10px;
+
+button:hover{
+opacity:0.9;
+}
+
+.post{
+margin-top:10px;
+padding:10px;
+background:#f5f5f5;
+border-radius:8px;
+}
+
+.profileImg{
+width:50px;
+height:50px;
+border-radius:50%;
+object-fit:cover;
+margin-right:10px;
+}
+.row{
+display:flex;
+align-items:center;
+}
+.like{
+color:red;
+cursor:pointer;
 }
 </style>
 </head>
-
 <body>
 
 <header>🚀 Show-To Social</header>
 
 <div class="container">
 
+<div class="card" id="authBox">
+<h3>Login</h3>
+<input type="email" id="email" placeholder="Email">
+<input type="password" id="password" placeholder="Password">
+<button onclick="login()">Login</button>
+<button onclick="signup()">Signup</button>
+</div>
+
+<div id="mainApp" style="display:none;">
+
 <div class="card">
-<h3>Upload Profile Photo</h3>
-<input type="file" id="fileInput">
-<button onclick="uploadImage()">Upload</button>
-<div id="result"></div>
+<div class="row">
+<img id="userPhoto" class="profileImg">
+<div>
+<div id="userEmail"></div>
+<button onclick="logout()" style="background:red;margin-top:5px;">Logout</button>
+</div>
+</div>
 </div>
 
+<div class="card">
+<h4>Upload Profile Photo</h4>
+<input type="file" id="profilePic">
+<button onclick="uploadProfile()">Upload</button>
 </div>
 
-<script>
-function uploadImage(){
+<div class="card">
+<textarea id="postText" placeholder="What's on your mind?"></textarea>
+<button onclick="createPost()">Post</button>
+</div>
 
-const file = document.getElementById("fileInput").files[0];
+<div id="posts"></div>
 
+</div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+
+const firebaseConfig = {
+apiKey: "AIzaSyCT2YXbRSsVj4LHyvuz0r2uKlw6beo6Jn8",
+authDomain: "show-to-cdf74.firebaseapp.com",
+projectId: "show-to-cdf74",
+storageBucket: "show-to-cdf74.firebasestorage.app",
+messagingSenderId: "608425909130",
+appId: "1:608425909130:web:c9b9c46ebb07485cf8c673"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+let currentUser = null;
+let userPhotoURL = "";
+
+onAuthStateChanged(auth,(user)=>{
+if(user){
+currentUser = user;
+document.getElementById("authBox").style.display="none";
+document.getElementById("mainApp").style.display="block";
+document.getElementById("userEmail").innerText=user.email;
+loadPosts();
+}else{
+document.getElementById("authBox").style.display="block";
+document.getElementById("mainApp").style.display="none";
+}
+});
+
+window.signup = ()=>{
+createUserWithEmailAndPassword(auth,email.value,password.value);
+}
+
+window.login = ()=>{
+signInWithEmailAndPassword(auth,email.value,password.value);
+}
+
+window.logout = ()=>{
+signOut(auth);
+}
+
+window.createPost = async ()=>{
+if(postText.value=="") return;
+await addDoc(collection(db,"posts"),{
+text:postText.value,
+user:currentUser.email,
+photo:userPhotoURL,
+likes:0
+});
+postText.value="";
+}
+
+function loadPosts(){
+onSnapshot(collection(db,"posts"),(snapshot)=>{
+posts.innerHTML="";
+snapshot.forEach(docSnap=>{
+let data=docSnap.data();
+posts.innerHTML+=`
+<div class="card">
+<div class="row">
+<img src="${data.photo || 'https://via.placeholder.com/50'}" class="profileImg">
+<strong>${data.user}</strong>
+</div>
+<div class="post">${data.text}</div>
+<div>
+<span class="like" onclick="likePost('${docSnap.id}',${data.likes})">❤ ${data.likes}</span>
+${data.user===currentUser.email ? `<button onclick="deletePost('${docSnap.id}')">Delete</button>`:""}
+</div>
+</div>
+`;
+});
+});
+}
+
+window.deletePost = async(id)=>{
+await deleteDoc(doc(db,"posts",id));
+}
+
+window.likePost = async(id,currentLikes)=>{
+await updateDoc(doc(db,"posts",id),{
+likes:currentLikes+1
+});
+}
+
+window.uploadProfile = ()=>{
+const file = profilePic.files[0];
 const formData = new FormData();
-formData.append("file", file);
-formData.append("upload_preset", "ml_default");
+formData.append("file",file);
+formData.append("upload_preset","ml_default");
 
 fetch("https://api.cloudinary.com/v1_1/mukeshdengada/image/upload",{
-  method:"POST",
-  body:formData
+method:"POST",
+body:formData
 })
 .then(res=>res.json())
 .then(data=>{
-  document.getElementById("result").innerHTML =
-  `<img src="${data.secure_url}">
-   <p>Upload Successful ✅</p>`;
-})
-.catch(err=>{
-  alert("Error uploading image");
+userPhotoURL=data.secure_url;
+document.getElementById("userPhoto").src=userPhotoURL;
 });
 }
+
 </script>
 
 </body>
