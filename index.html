@@ -1,129 +1,62 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Show-To | Pro Version</title>
+<title>Show-To Social</title>
 
 <style>
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: #f4f6f9;
-}
-
-header {
-  background: #111;
-  color: white;
-  text-align: center;
-  padding: 18px;
-  font-size: 22px;
-}
-
-.container {
-  max-width: 500px;
-  margin: auto;
-  padding: 20px;
-}
-
-.card {
-  background: white;
-  padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-  margin-bottom: 20px;
-}
-
-input, textarea {
-  width: 100%;
-  padding: 12px;
-  margin: 10px 0;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-}
-
-button {
-  width: 100%;
-  padding: 12px;
-  background: #007bff;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-button:hover {
-  background: #0056b3;
-}
-
-.post {
-  background: #fff;
-  padding: 15px;
-  margin-bottom: 12px;
-  border-radius: 8px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-  position: relative;
-}
-
-.delete-btn {
-  position: absolute;
-  right: 10px;
-  top: 10px;
-  background: red;
-  color: white;
-  border: none;
-  padding: 5px 8px;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 12px;
-}
-
-.time {
-  font-size: 12px;
-  color: gray;
-  margin-top: 5px;
-}
-
-.empty {
-  text-align: center;
-  color: gray;
-}
-
-footer {
-  text-align: center;
-  padding: 15px;
-  font-size: 13px;
-  color: #777;
-}
+body {margin:0;font-family:Arial;background:#eef1f5;}
+header {background:#1877f2;color:white;padding:15px;text-align:center;}
+.container {max-width:600px;margin:auto;padding:20px;}
+.card {background:white;padding:15px;border-radius:10px;margin-bottom:15px;box-shadow:0 2px 8px rgba(0,0,0,0.1);}
+input, textarea {width:100%;padding:10px;margin:8px 0;border-radius:8px;border:1px solid #ccc;}
+button {background:#1877f2;color:white;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;}
+.like-btn {background:#eee;color:#333;margin-right:5px;}
+.logout {background:red;margin-top:10px;}
+.hidden {display:none;}
 </style>
 </head>
 
 <body>
 
-<header>🚀 Show-To Pro</header>
+<header>🚀 Show-To Social</header>
 
 <div class="container">
 
-  <div class="card">
-    <h2>Share Something</h2>
-    <input type="text" id="name" placeholder="Your Name">
-    <textarea id="message" placeholder="Write something..."></textarea>
-    <button onclick="saveData()">Submit</button>
-  </div>
+<div class="card" id="authBox">
+<h3>Login / Sign Up</h3>
+<input type="email" id="email" placeholder="Email">
+<input type="password" id="password" placeholder="Password">
+<button onclick="signUp()">Sign Up</button>
+<button onclick="login()">Login</button>
+</div>
 
-  <div class="card">
-    <h2>All Posts</h2>
-    <div id="posts"></div>
-  </div>
+<div id="appSection" class="hidden">
+
+<div class="card">
+<h3>Welcome <span id="userEmail"></span></h3>
+<button class="logout" onclick="logout()">Logout</button>
+</div>
+
+<div class="card">
+<h3>Create Post</h3>
+<textarea id="message" placeholder="What's on your mind?"></textarea>
+<button onclick="savePost()">Post</button>
+</div>
+
+<div id="posts"></div>
 
 </div>
 
-<footer>© 2026 Show-To</footer>
+</div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, query, orderBy, deleteDoc, doc } 
+import { getFirestore, collection, addDoc, getDocs, query, orderBy, updateDoc, deleteDoc, doc, increment }
 from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged }
+from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCT2YXbRSsVj4LHyvuz0r2uKlw6beo6Jn8",
@@ -136,61 +69,79 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
 
-window.saveData = async function() {
-  const name = document.getElementById("name").value;
-  const message = document.getElementById("message").value;
+window.signUp = async function(){
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+  await createUserWithEmailAndPassword(auth, email, password);
+}
 
-  if(name === "" || message === "") {
-    alert("Please fill all fields");
-    return;
+window.login = async function(){
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+  await signInWithEmailAndPassword(auth, email, password);
+}
+
+window.logout = async function(){
+  await signOut(auth);
+}
+
+onAuthStateChanged(auth, user=>{
+  if(user){
+    document.getElementById("authBox").classList.add("hidden");
+    document.getElementById("appSection").classList.remove("hidden");
+    document.getElementById("userEmail").innerText = user.email;
+    loadPosts();
+  } else {
+    document.getElementById("authBox").classList.remove("hidden");
+    document.getElementById("appSection").classList.add("hidden");
   }
+});
 
-  await addDoc(collection(db, "posts"), {
-    name,
+window.savePost = async function(){
+  const message = document.getElementById("message").value;
+  if(!message) return;
+
+  await addDoc(collection(db,"posts"),{
     message,
-    timestamp: new Date()
+    user: auth.currentUser.email,
+    likes:0,
+    timestamp:new Date()
   });
 
-  document.getElementById("name").value = "";
-  document.getElementById("message").value = "";
-
-  loadPosts();
-};
-
-async function deletePost(id) {
-  await deleteDoc(doc(db, "posts", id));
+  document.getElementById("message").value="";
   loadPosts();
 }
 
-async function loadPosts() {
-  const postsDiv = document.getElementById("posts");
-  postsDiv.innerHTML = "";
+async function likePost(id){
+  await updateDoc(doc(db,"posts",id),{likes:increment(1)});
+  loadPosts();
+}
 
-  const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
-  const snapshot = await getDocs(q);
+async function deletePost(id){
+  await deleteDoc(doc(db,"posts",id));
+  loadPosts();
+}
 
-  if(snapshot.empty) {
-    postsDiv.innerHTML = "<p class='empty'>No posts yet.</p>";
-    return;
-  }
+async function loadPosts(){
+  const container=document.getElementById("posts");
+  container.innerHTML="";
+  const q=query(collection(db,"posts"),orderBy("timestamp","desc"));
+  const snap=await getDocs(q);
 
-  snapshot.forEach((docSnap) => {
-    const data = docSnap.data();
-    const time = data.timestamp?.toDate().toLocaleString();
-
-    postsDiv.innerHTML += `
-      <div class="post">
-        <button class="delete-btn" onclick="deletePost('${docSnap.id}')">Delete</button>
-        <strong>${data.name}</strong>
+  snap.forEach(docSnap=>{
+    const data=docSnap.data();
+    container.innerHTML+=`
+      <div class="card">
+        <strong>${data.user}</strong>
         <p>${data.message}</p>
-        <div class="time">${time}</div>
+        <button class="like-btn" onclick="likePost('${docSnap.id}')">❤️ ${data.likes}</button>
+        <button onclick="deletePost('${docSnap.id}')">Delete</button>
       </div>
     `;
   });
 }
-
-loadPosts();
 </script>
 
 </body>
