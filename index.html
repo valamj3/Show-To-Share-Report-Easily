@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Show-To | Share & Report Easily</title>
-<meta name="description" content="Show-To is a simple platform where users can share ideas, reports, and useful information quickly and easily.">
 
 <style>
 body {
@@ -32,10 +31,7 @@ header {
   padding: 20px;
   border-radius: 10px;
   box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-}
-
-h2 {
-  text-align: center;
+  margin-bottom: 20px;
 }
 
 input, textarea {
@@ -44,7 +40,6 @@ input, textarea {
   margin: 10px 0;
   border-radius: 6px;
   border: 1px solid #ccc;
-  font-size: 14px;
 }
 
 button {
@@ -54,7 +49,6 @@ button {
   color: white;
   border: none;
   border-radius: 6px;
-  font-size: 16px;
   cursor: pointer;
 }
 
@@ -62,11 +56,17 @@ button:hover {
   background: #0056b3;
 }
 
-#status {
-  margin-top: 12px;
-  color: green;
-  text-align: center;
-  font-weight: bold;
+.post {
+  background: #fff;
+  padding: 15px;
+  margin-bottom: 10px;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.post strong {
+  display: block;
+  margin-bottom: 5px;
 }
 
 footer {
@@ -80,29 +80,31 @@ footer {
 
 <body>
 
-<header>
-🚀 Show-To
-</header>
+<header>🚀 Show-To</header>
 
 <div class="container">
+
   <div class="card">
     <h2>Share Something</h2>
 
     <input type="text" id="name" placeholder="Your Name">
     <textarea id="message" placeholder="Write something..."></textarea>
     <button onclick="saveData()">Submit</button>
-
-    <p id="status"></p>
   </div>
+
+  <div class="card">
+    <h2>All Posts</h2>
+    <div id="posts"></div>
+  </div>
+
 </div>
 
-<footer>
-© 2026 Show-To
-</footer>
+<footer>© 2026 Show-To</footer>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
-import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, query, orderBy } 
+from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCT2YXbRSsVj4LHyvuz0r2uKlw6beo6Jn8",
@@ -131,10 +133,31 @@ window.saveData = async function() {
     timestamp: new Date()
   });
 
-  document.getElementById("status").innerText = "✅ Data Saved Successfully!";
   document.getElementById("name").value = "";
   document.getElementById("message").value = "";
+
+  loadPosts();
+};
+
+async function loadPosts() {
+  const postsDiv = document.getElementById("posts");
+  postsDiv.innerHTML = "";
+
+  const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
+  const querySnapshot = await getDocs(q);
+
+  querySnapshot.forEach((doc) => {
+    const data = doc.data();
+    postsDiv.innerHTML += `
+      <div class="post">
+        <strong>${data.name}</strong>
+        <p>${data.message}</p>
+      </div>
+    `;
+  });
 }
+
+loadPosts();
 </script>
 
 </body>
