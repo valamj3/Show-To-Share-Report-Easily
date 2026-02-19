@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>Show-To | Share & Report Easily</title>
 <meta name="description" content="Show-To is a simple platform where users can share ideas, reports, and useful information quickly and easily.">
 
@@ -20,7 +19,6 @@ header {
   text-align: center;
   padding: 18px;
   font-size: 24px;
-  letter-spacing: 1px;
 }
 
 .container {
@@ -64,7 +62,7 @@ button:hover {
   background: #0056b3;
 }
 
-.success {
+#status {
   margin-top: 12px;
   color: green;
   text-align: center;
@@ -83,31 +81,59 @@ footer {
 <body>
 
 <header>
-  🚀 Show-To
+🚀 Show-To
 </header>
 
 <div class="container">
   <div class="card">
     <h2>Share Something</h2>
 
-    <form onsubmit="submitForm(event)">
-      <input type="text" placeholder="Your Name" required>
-      <textarea placeholder="Write something you want to share..." required></textarea>
-      <button type="submit">Submit</button>
-    </form>
+    <input type="text" id="name" placeholder="Your Name">
+    <textarea id="message" placeholder="Write something..."></textarea>
+    <button onclick="saveData()">Submit</button>
 
-    <div class="success" id="msg"></div>
+    <p id="status"></p>
   </div>
 </div>
 
 <footer>
-  © 2026 Show-To | Simple Sharing Platform
+© 2026 Show-To
 </footer>
 
-<script>
-function submitForm(event) {
-  event.preventDefault();
-  document.getElementById("msg").innerText = "✅ Successfully Submitted!";
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCT2YXbRSsVj4LHyvuz0r2uKlw6beo6Jn8",
+  authDomain: "show-to-cdf74.firebaseapp.com",
+  projectId: "show-to-cdf74",
+  storageBucket: "show-to-cdf74.firebasestorage.app",
+  messagingSenderId: "608425909130",
+  appId: "1:608425909130:web:c9b9c46ebb07485cf8c673"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+window.saveData = async function() {
+  const name = document.getElementById("name").value;
+  const message = document.getElementById("message").value;
+
+  if(name === "" || message === "") {
+    alert("Please fill all fields");
+    return;
+  }
+
+  await addDoc(collection(db, "posts"), {
+    name: name,
+    message: message,
+    timestamp: new Date()
+  });
+
+  document.getElementById("status").innerText = "✅ Data Saved Successfully!";
+  document.getElementById("name").value = "";
+  document.getElementById("message").value = "";
 }
 </script>
 
